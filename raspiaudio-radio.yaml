@@ -4,16 +4,25 @@ esphome:
   platformio_options:
     board_build.flash_mode: dio
     board_build.arduino.memory_type: qio_opi
+  on_boot:
+    then:
+      - switch.turn_on: dac_mute
 
 external_components:
   - source:
       type: git
       url: https://github.com/gnumpi/esphome_audio
       ref: main
-    components: [ adf_pipeline, i2s_audio ]
-  # - source: github://RASPIAUDIO/esphomeLuxe@main
-  #   components: [es8388]
-  #   refresh: 0s
+    components: [adf_pipeline, i2s_audio]
+  # - source:
+  #     type: local
+  #     path: /external_components/esphome_audio/esphome/components
+  #   components: [ adf_pipeline, i2s_audio ]
+  - source:
+      type: local
+      path: /external_components/tetele_esphome/esphome/components
+    components: [es8388]
+    # refresh: 0s
 
 esp32:
   board: esp32-s3-devkitc-1
@@ -26,9 +35,9 @@ esp32:
       CONFIG_ESP32_S3_BOX_BOARD: "y"
 
 ################
-# psram: # TODO
-#   mode: quad
-#   speed: 80MHz
+psram: # TODO
+  mode: octal
+  speed: 80MHz
 ################
 
 # Enable logging
@@ -65,6 +74,7 @@ spi:
     # miso_pin: GPIOXX
     interface: hardware
 
+es8388:
 
 #define CLICK2      GPIO_NUM_35
 #define CLICK1      GPIO_NUM_48
@@ -80,16 +90,16 @@ spi:
 #define BAT_GAUGE_PIN   13
 
 binary_sensor:
-  - platform: gpio
-    pin:
-      number: GPIO35
-      mode:
-        input: true
-        pullup: true
-    id: function_button
-    name: Function button
-    disabled_by_default: true
-    
+  # - platform: gpio
+  #   pin:
+  #     number: GPIO35
+  #     mode:
+  #       input: true
+  #       pullup: true
+  #   id: function_button
+  #   name: Function button
+  #   disabled_by_default: true
+
   - platform: gpio
     pin:
       number: GPIO48
@@ -99,7 +109,7 @@ binary_sensor:
     id: volume_button
     name: Volume button
     disabled_by_default: true
-    
+
   # - platform: gpio
   #   pin:
   #     number: GPIO10
@@ -108,7 +118,7 @@ binary_sensor:
   #       pullup: true
   #   id: jack_plugged
   #   name: Jack plugged in
-    
+
   # - platform: gpio
   #   pin:
   #     number: GPIO21
@@ -124,7 +134,7 @@ binary_sensor:
     # name: Check button
     # disabled_by_default: true
     # icon: mdi:check
-    lambda: !lambda 'return (abs(id(fp_buttons_adc).state-0.81) < 0.15);'
+    lambda: !lambda "return (abs(id(fp_buttons_adc).state-0.81) < 0.15);"
 
   - platform: template
     id: button_share
@@ -132,7 +142,7 @@ binary_sensor:
     # name: Share button
     # disabled_by_default: true
     # icon: mdi:hand-heart
-    lambda: !lambda 'return (abs(id(fp_buttons_adc).state-1.57) < 0.15);'
+    lambda: !lambda "return (abs(id(fp_buttons_adc).state-1.57) < 0.15);"
 
   - platform: template
     id: button_love
@@ -140,7 +150,7 @@ binary_sensor:
     # name: Love button
     # disabled_by_default: true
     # icon: mdi:heart
-    lambda: !lambda 'return (abs(id(fp_buttons_adc).state-1.98) < 0.15);'
+    lambda: !lambda "return (abs(id(fp_buttons_adc).state-1.98) < 0.15);"
 
   - platform: template
     id: button_like
@@ -148,7 +158,7 @@ binary_sensor:
     # name: Like button
     # disabled_by_default: true
     # icon: mdi:thumb-up
-    lambda: !lambda 'return (abs(id(fp_buttons_adc).state-0.43) < 0.15);'
+    lambda: !lambda "return (abs(id(fp_buttons_adc).state-0.43) < 0.15);"
 
 sensor:
   - platform: rotary_encoder
@@ -178,7 +188,7 @@ sensor:
       mode:
         input: true
         pullup: true
-  
+
   - platform: adc
     pin: GPIO1
     id: fp_buttons_adc
@@ -188,7 +198,6 @@ sensor:
     update_interval: 100ms
     filters:
       - delta: 0.3
-          
 
 switch:
   - platform: gpio
@@ -196,7 +205,7 @@ switch:
     name: DAC mute
     pin:
       number: GPIO46
-      inverted: true
+      # inverted: true
       mode:
         output: true
 
@@ -225,25 +234,28 @@ adf_pipeline:
     id: adf_i2s_out
     i2s_audio_id: i2s_shared
     i2s_dout_pin: GPIO17
-    sample_rate: 16000
-    adf_alc: true
-    bits_per_sample: 32bit
-    fixed_settings: true
-    dac:
-      model: es8388
-      address: 0x10
+    # sample_rate: 16000
+    # adf_alc: true
+    # bits_per_sample: 32bit
+    # fixed_settings: true
+    # dac:
+    #   model: es8388
+    #   address: 0x10
 
   - platform: i2s_audio
     type: audio_in
     id: adf_i2s_in
     i2s_audio_id: i2s_shared
     i2s_din_pin: GPIO4
-    channel: right
+    # channel: right
     pdm: false
-    sample_rate: 16000
-    bits_per_sample: 32bit
-    fixed_settings: true
-  
+    # sample_rate: 16000
+    # bits_per_sample: 32bit
+    # fixed_settings: true
+    # adc:
+    #   model: es7210
+    #   address: 0x10
+
 microphone:
   - platform: adf_pipeline
     id: raspiaudio_microphone
@@ -271,6 +283,7 @@ display:
     cs_pin: GPIO40
     dc_pin: GPIO39
     reset_pin: GPIO9
+    invert_colors: true
     lambda: |-
       auto red = Color(255,0,0);
       it.fill(Color::WHITE);
