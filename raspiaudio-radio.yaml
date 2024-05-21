@@ -1,0 +1,278 @@
+esphome:
+  name: raspiaudio-radio
+  friendly_name: Raspiaudio Radio
+  platformio_options:
+    board_build.flash_mode: dio
+    board_build.arduino.memory_type: qio_opi
+
+external_components:
+  - source:
+      type: git
+      url: https://github.com/gnumpi/esphome_audio
+      ref: main
+    components: [ adf_pipeline, i2s_audio ]
+  # - source: github://RASPIAUDIO/esphomeLuxe@main
+  #   components: [es8388]
+  #   refresh: 0s
+
+esp32:
+  board: esp32-s3-devkitc-1
+  framework:
+    type: esp-idf
+    version: recommended
+    sdkconfig_options:
+      # need to set a s3 compatible board for the adf-sdk to compile
+      # board specific code is not used though
+      CONFIG_ESP32_S3_BOX_BOARD: "y"
+
+################
+# psram: # TODO
+#   mode: quad
+#   speed: 80MHz
+################
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "MMMPI+wN5Dmy4WFNr/2KH8wnnHtEtQTRw58aLo7ngRA="
+
+ota:
+  password: "ab866230ad40dcfcc8d39d9405b6ba54"
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Raspiaudio-Radio"
+    password: "HdLkEn6lGWKn"
+
+captive_portal:
+
+i2c:
+  sda: GPIO18
+  scl: GPIO11
+  id: i2c_bus
+
+spi:
+  - id: spi_bus0
+    clk_pin: GPIO12
+    mosi_pin: GPIO8
+    # miso_pin: GPIOXX
+    interface: hardware
+
+
+#define CLICK2      GPIO_NUM_35
+#define CLICK1      GPIO_NUM_48
+#define I2S_DOUT      17
+#define I2S_BCLK      5
+#define I2S_LRC       16
+#define I2S_DIN       4
+#define JACK_DETECT     GPIO_NUM_10
+#define USB_DETECT      GPIO_NUM_21
+#define IR              GPIO_NUM_47
+#define PA              GPIO_NUM_46
+#define REC             CLICK1
+#define BAT_GAUGE_PIN   13
+
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: GPIO35
+      mode:
+        input: true
+        pullup: true
+    id: function_button
+    name: Function button
+    disabled_by_default: true
+    
+  - platform: gpio
+    pin:
+      number: GPIO48
+      mode:
+        input: true
+        pullup: true
+    id: volume_button
+    name: Volume button
+    disabled_by_default: true
+    
+  # - platform: gpio
+  #   pin:
+  #     number: GPIO10
+  #     mode:
+  #       input: true
+  #       pullup: true
+  #   id: jack_plugged
+  #   name: Jack plugged in
+    
+  # - platform: gpio
+  #   pin:
+  #     number: GPIO21
+  #     mode:
+  #       input: true
+  #       pullup: true
+  #   id: usb_plugged
+  #   name: USB plugged in
+
+  - platform: template
+    id: button_check
+    internal: true
+    # name: Check button
+    # disabled_by_default: true
+    # icon: mdi:check
+    lambda: !lambda 'return (abs(id(fp_buttons_adc).state-0.81) < 0.15);'
+
+  - platform: template
+    id: button_share
+    internal: true
+    # name: Share button
+    # disabled_by_default: true
+    # icon: mdi:hand-heart
+    lambda: !lambda 'return (abs(id(fp_buttons_adc).state-1.57) < 0.15);'
+
+  - platform: template
+    id: button_love
+    internal: true
+    # name: Love button
+    # disabled_by_default: true
+    # icon: mdi:heart
+    lambda: !lambda 'return (abs(id(fp_buttons_adc).state-1.98) < 0.15);'
+
+  - platform: template
+    id: button_like
+    internal: true
+    # name: Like button
+    # disabled_by_default: true
+    # icon: mdi:thumb-up
+    lambda: !lambda 'return (abs(id(fp_buttons_adc).state-0.43) < 0.15);'
+
+sensor:
+  - platform: rotary_encoder
+    name: "Volume"
+    id: volume_encoder
+    pin_a:
+      number: GPIO42
+      mode:
+        input: true
+        pullup: true
+    pin_b:
+      number: GPIO3
+      mode:
+        input: true
+        pullup: true
+
+  - platform: rotary_encoder
+    name: "Function"
+    id: function_encoder
+    pin_a:
+      number: GPIO7
+      mode:
+        input: true
+        pullup: true
+    pin_b:
+      number: GPIO6
+      mode:
+        input: true
+        pullup: true
+  
+  - platform: adc
+    pin: GPIO1
+    id: fp_buttons_adc
+    internal: true
+    disabled_by_default: true
+    attenuation: auto
+    update_interval: 100ms
+    filters:
+      - delta: 0.3
+          
+
+switch:
+  - platform: gpio
+    id: dac_mute
+    name: DAC mute
+    pin:
+      number: GPIO46
+      inverted: true
+      mode:
+        output: true
+
+output:
+  - platform: ledc
+    pin:
+      number: GPIO41
+      mode:
+        output: true
+    id: screen_backlight
+
+light:
+  - platform: monochromatic
+    output: screen_backlight
+    name: Screen backlight
+
+i2s_audio:
+  - id: i2s_shared
+    i2s_lrclk_pin: GPIO16
+    i2s_bclk_pin: GPIO5
+    access_mode: duplex
+
+adf_pipeline:
+  - platform: i2s_audio
+    type: audio_out
+    id: adf_i2s_out
+    i2s_audio_id: i2s_shared
+    i2s_dout_pin: GPIO17
+    sample_rate: 16000
+    adf_alc: true
+    bits_per_sample: 32bit
+    fixed_settings: true
+    dac:
+      model: es8388
+      address: 0x10
+
+  - platform: i2s_audio
+    type: audio_in
+    id: adf_i2s_in
+    i2s_audio_id: i2s_shared
+    i2s_din_pin: GPIO4
+    channel: right
+    pdm: false
+    sample_rate: 16000
+    bits_per_sample: 32bit
+    fixed_settings: true
+  
+microphone:
+  - platform: adf_pipeline
+    id: raspiaudio_microphone
+    keep_pipeline_alive: true
+    gain_log2: 3
+    pipeline:
+      - adf_i2s_in
+      - self
+
+media_player:
+  - platform: adf_pipeline
+    id: raspiaudio_speaker
+    name: None
+    internal: false
+    keep_pipeline_alive: true
+    pipeline:
+      - self
+      - resampler
+      - adf_i2s_out
+
+display:
+  - id: raspiaudio_display
+    platform: ili9xxx
+    model: ST7789V
+    cs_pin: GPIO40
+    dc_pin: GPIO39
+    reset_pin: GPIO9
+    lambda: |-
+      auto red = Color(255,0,0);
+      it.fill(Color::WHITE);
+      it.filled_circle(40, 32, 15, red);
+      // it.print(0, 0, id(my_font), id(my_red), TextAlign::TOP_LEFT, "Hello World!");
