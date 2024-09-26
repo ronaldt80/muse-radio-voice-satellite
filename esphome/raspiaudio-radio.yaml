@@ -120,6 +120,19 @@ microphone:
     adc_type: external
     pdm: false
 
+display:
+  - id: raspiaudio_display
+    platform: ili9xxx
+    model: ST7789V
+    cs_pin: GPIO40
+    dc_pin: GPIO39
+    reset_pin: GPIO9
+    invert_colors: true
+    transform:
+      mirror_y: true
+    update_interval: never
+    auto_clear_enabled: false
+
 ###############
 # HA Components
 
