@@ -262,6 +262,16 @@ sensor:
     filters:
       - delta: 0.3
 
+switch:
+  - platform: template
+    name: Use Wake Word
+    id: use_wake_word
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_ON
+    on_turn_on:
+      - script.execute: turn_on_wake_word
+    on_turn_off:
+      - script.execute: turn_off_wake_word
 media_player:
   - platform: i2s_audio
     id: raspiaudio_speaker
@@ -280,6 +290,20 @@ voice_assistant:
   id: va
   microphone: raspiaudio_microphone
   media_player: raspiaudio_speaker
+  on_client_connected:
+    - if:
+        condition:
+          and:
+            - switch.is_on: use_wake_word
+        then:
+          - voice_assistant.start_continuous:
+  on_client_disconnected:
+    - if:
+        condition:
+          and:
+            - switch.is_on: use_wake_word
+        then:
+          - voice_assistant.stop:
   on_tts_end:
     - media_player.play_media: !lambda return x;
   on_end:
@@ -306,3 +330,34 @@ script:
           else:
             - logger.log: "Turn on DAC mute"
             - output.turn_on: dac_mute
+
+  - id: turn_on_wake_word
+    then:
+      - if:
+          condition:
+            and:
+              - switch.is_on: use_wake_word
+          then:
+            - lambda: id(va).set_use_wake_word(true);
+            - if:
+                condition:
+                  not:
+                    media_player.is_idle:
+                then:
+                  - media_player.stop:
+            - if:
+                condition:
+                  not:
+                    - voice_assistant.is_running
+                then:
+                  - voice_assistant.start_continuous
+          else:
+            - logger.log:
+                tag: "turn_on_wake_word"
+                format: "Trying to start listening for wake word, but wake word toggle is off"
+                level: "INFO"
+
+  - id: turn_off_wake_word
+    then:
+      - voice_assistant.stop
+      - lambda: id(va).set_use_wake_word(false);
