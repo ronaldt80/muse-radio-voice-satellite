@@ -43,8 +43,6 @@ esp32:
 logger:
 
 api:
-  encryption:
-    key: "MMMPI+wN5Dmy4WFNr/2KH8wnnHtEtQTRw58aLo7ngRA="
   services:
     - service: start_va
       then:
@@ -55,7 +53,6 @@ api:
 
 ota:
   platform: esphome
-  password: "ab866230ad40dcfcc8d39d9405b6ba54"
 
 wifi:
   ssid: !secret wifi_ssid
@@ -64,7 +61,7 @@ wifi:
   # Enable fallback hotspot (captive portal) in case wifi connection fails
   ap:
     ssid: "Raspiaudio-Radio"
-    password: "HdLkEn6lGWKn"
+    password: "XXXXXXXXXXX"
 
 captive_portal:
 
