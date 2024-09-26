@@ -127,11 +127,22 @@ display:
     cs_pin: GPIO40
     dc_pin: GPIO39
     reset_pin: GPIO9
-    invert_colors: true
-    transform:
-      mirror_y: true
+    invert_colors: false
+    rotation: 270   # Set the rotation to 90 degrees clockwise
     update_interval: never
     auto_clear_enabled: false
+
+
+# Add LVGL configuration to display "RASPIAUDIO" with mirroring and rotation
+lvgl:
+  displays:
+    - raspiaudio_display
+  pages:
+    - id: main_page
+      widgets:
+        - label:
+            align: CENTER
+            text: 'RASPIAUDIO'
 
 ###############
 # HA Components
@@ -273,6 +284,7 @@ switch:
       - script.execute: turn_on_wake_word
     on_turn_off:
       - script.execute: turn_off_wake_word
+
 media_player:
   - platform: i2s_audio
     id: raspiaudio_speaker
@@ -287,6 +299,7 @@ media_player:
       mode:
         output: true
       allow_other_uses: true
+
 voice_assistant:
   id: va
   microphone: raspiaudio_microphone
