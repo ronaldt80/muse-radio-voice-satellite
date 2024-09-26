@@ -1,6 +1,11 @@
-esphome:
+substitutions:
   name: raspiaudio-radio
   friendly_name: Raspiaudio Radio
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+  min_version: 2024.9.3
   platformio_options:
     board_build.flash_mode: dio
     board_build.arduino.memory_type: qio_opi
@@ -15,13 +20,14 @@ external_components:
   #     type: local
   #     path: /external_components/esphome_audio/esphome/components
   #   components: [ adf_pipeline, i2s_audio ]
-  - source:
-      type: local
-      path: /external_components/tetele_esphome/esphome/components
+  - source: github://pr#6956
     components: [es8388]
+    refresh: 0s
 
 esp32:
   board: esp32-s3-devkitc-1
+  variant: esp32s3
+  flash_size: 4MB
   framework:
     type: arduino
     # version: recommended
@@ -30,21 +36,14 @@ esp32:
     #   # board specific code is not used though
     #   CONFIG_ESP32_S3_BOX_BOARD: "y"
 
-################
-psram: # TODO
-  mode: octal
-  speed: 80MHz
-################
-
-# Enable logging
 logger:
 
-# Enable Home Assistant API
 api:
   encryption:
     key: "MMMPI+wN5Dmy4WFNr/2KH8wnnHtEtQTRw58aLo7ngRA="
 
 ota:
+  platform: esphome
   password: "ab866230ad40dcfcc8d39d9405b6ba54"
 
 wifi:
@@ -58,6 +57,19 @@ wifi:
 
 captive_portal:
 
+##########
+# Hardware
+
+es8388:
+  preset: raspiaudio_radio
+
+psram:
+  mode: octal
+  speed: 80MHz
+
+#######
+# Buses
+
 i2c:
   sda: GPIO18
   scl: GPIO11
@@ -70,20 +82,42 @@ spi:
     # miso_pin: GPIOXX
     interface: hardware
 
-es8388:
 
-#define CLICK2      GPIO_NUM_35
-#define CLICK1      GPIO_NUM_48
-#define I2S_DOUT      17
-#define I2S_BCLK      5
-#define I2S_LRC       16
-#define I2S_DIN       4
-#define JACK_DETECT     GPIO_NUM_10
-#define USB_DETECT      GPIO_NUM_21
-#define IR              GPIO_NUM_47
-#define PA              GPIO_NUM_46
-#define REC             CLICK1
-#define BAT_GAUGE_PIN   13
+#####################
+# Internal components
+
+output:
+  - platform: gpio
+    id: dac_mute
+    pin:
+      number: GPIO46
+      inverted: true
+      mode:
+        output: true
+      allow_other_uses: true
+
+  - platform: ledc
+    pin:
+      number: GPIO41
+      mode:
+        output: true
+    id: screen_backlight_pin
+
+light:
+  - platform: monochromatic
+    output: screen_backlight_pin
+    id: screen_backlight
+    name: Screen backlight
+
+microphone:
+  - platform: i2s_audio
+    id: raspiaudio_microphone
+    i2s_din_pin: GPIO4
+    adc_type: external
+    pdm: false
+
+###############
+# HA Components
 
 binary_sensor:
   # - platform: gpio
@@ -99,6 +133,7 @@ binary_sensor:
   - platform: gpio
     pin:
       number: GPIO48
+      inverted: true
       mode:
         input: true
         pullup: true
@@ -209,33 +244,6 @@ sensor:
     filters:
       - delta: 0.3
 
-output:
-  - platform: gpio
-    id: dac_mute
-    pin:
-      number: GPIO46
-      inverted: true
-      mode:
-        output: true
-
-  - platform: ledc
-    pin:
-      number: GPIO41
-      mode:
-        output: true
-    id: screen_backlight
-
-light:
-  - platform: monochromatic
-    output: screen_backlight
-    name: Screen backlight
-
-i2s_audio:
-  - id: i2s_shared
-    i2s_lrclk_pin: GPIO16
-    i2s_bclk_pin: GPIO5
-    i2s_mclk_pin: GPIO0
-
 media_player:
   - platform: i2s_audio
     id: raspiaudio_speaker
@@ -244,30 +252,9 @@ media_player:
     i2s_dout_pin: GPIO17
     i2s_audio_id: i2s_shared
     mode: mono
-    on_state:
-      then:
-        - script.execute: update_dac_mute
 
-microphone:
-  - platform: i2s_audio
-    id: raspiaudio_microphone
-    i2s_din_pin: GPIO4
-    adc_type: external
-    pdm: false
-
-display:
-  - id: raspiaudio_display
-    platform: ili9xxx
-    model: ST7789V
-    cs_pin: GPIO40
-    dc_pin: GPIO39
-    reset_pin: GPIO9
-    invert_colors: true
-    lambda: |-
-      auto red = Color(255,0,0);
-      it.fill(Color::WHITE);
-      it.filled_circle(40, 32, 15, red);
-      // it.print(0, 0, id(my_font), id(my_red), TextAlign::TOP_LEFT, "Hello World!");
+#########
+# Scripts
 
 script:
   - id: update_dac_mute
