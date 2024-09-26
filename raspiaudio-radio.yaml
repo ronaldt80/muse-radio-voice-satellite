@@ -45,6 +45,13 @@ logger:
 api:
   encryption:
     key: "MMMPI+wN5Dmy4WFNr/2KH8wnnHtEtQTRw58aLo7ngRA="
+  services:
+    - service: start_va
+      then:
+        - voice_assistant.start
+    - service: stop_va
+      then:
+        - voice_assistant.stop
 
 ota:
   platform: esphome
@@ -149,6 +156,8 @@ binary_sensor:
     id: volume_button
     name: Volume button
     disabled_by_default: true
+    on_click:
+      then: voice_assistant.start
 
   - platform: gpio
     pin:
@@ -267,6 +276,18 @@ media_player:
       mode:
         output: true
       allow_other_uses: true
+voice_assistant:
+  id: va
+  microphone: raspiaudio_microphone
+  media_player: raspiaudio_speaker
+  on_tts_end:
+    - media_player.play_media: !lambda return x;
+  on_end:
+    - delay: 100ms
+    - wait_until:
+        condition:
+          not: media_player.is_playing
+    - voice_assistant.stop:
 
 #########
 # Scripts
