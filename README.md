@@ -1,3 +1,30 @@
-# Raspiaudio Muse Radio voice satellite
+# Raspiaudio Muse Radio Voice Satellite
 
-This is an ESPHome config which turns the [Raspiaudio Muse Radio](https://raspiaudio.com/product/muse-radio/) into a [Home Assistant](https://www.home-assistant.io/) voice satellite.
+[![YouTube Video](https://youtube.com/shorts/rKYeiVDZrrU)](https://youtube.com/shorts/rKYeiVDZrrU)
+
+This is an ESPHome configuration that turns the [Raspiaudio Muse Radio](https://raspiaudio.com/product/muse-radio/) into a [Home Assistant](https://www.home-assistant.io/) voice satellite.
+
+This project builds upon the work of [Tetele](https://github.com/tetele/muse-radio-voice-satellite). I have added several screen interfaces and fixed (hopefully) the keyword detection.
+
+## ESPHome Radio for RASPIAUDIO Muse Radio
+
+This project is designed for use with the **RASPIAUDIO Muse Radio**.
+
+### How It Works
+- **Wake Word**: Configure a wake word in Home Assistant - Voice Assistant.
+- **Microphones**: Ensure your pluggable microphones are connected.
+- **Screen Support**: Includes basic screen support using the new LVGL library.
+
+### Flashing Your Device
+1. Open **Google Chrome**.
+2. Visit [apps.raspiaudio.com](https://apps.raspiaudio.com).
+3. Select **Muse Radio - Home Assistant** and follow the on-screen instructions.
+
+### Source Code
+The source code is available on GitHub: [Raspiaudio Muse Radio Voice Satellite](https://github.com/RASPIAUDIO/muse-radio-voice-satellite)
+
+### Forum & Support
+For discussions and support, visit the [Raspiaudio Forum](https://forum.raspiaudio.com/t/muse-radio-home-assistant/).
+
+### Step-by-Step Video Guide
+For a detailed video tutorial, watch this [**step-by-step guide**](https://youtu.be/QDDjXAWuk0E) (created for the Luxe, but also applicable to the Muse Radio).
