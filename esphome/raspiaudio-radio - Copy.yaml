@@ -13,9 +13,6 @@ esphome:
     priority: -100.0
     then:
       - output.turn_off: dac_mute
-      - light.turn_on:
-          id: screen_backlight
-          brightness: 100%
 
 external_components:
   - source: github://pr#6956
@@ -28,6 +25,11 @@ esp32:
   flash_size: 4MB
   framework:
     type: arduino
+    # version: recommended
+    # sdkconfig_options:
+    #   # need to set a s3 compatible board for the adf-sdk to compile
+    #   # board specific code is not used though
+    #   CONFIG_ESP32_S3_BOX_BOARD: "y"
 
 logger:
 
@@ -47,7 +49,7 @@ wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
 
-  # Enable fallback hotspot (captive portal) in case Wi-Fi connection fails
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
   ap:
     ssid: "Raspiaudio-Radio"
     password: "XXXXXXXXXXX"
@@ -55,7 +57,7 @@ wifi:
 captive_portal:
 
 ##########
-# Hardware Configuration
+# Hardware
 
 es8388:
   preset: raspiaudio_radio
@@ -65,7 +67,7 @@ psram:
   speed: 80MHz
 
 #######
-# Buses Configuration
+# Buses
 
 i2c:
   sda: GPIO18
@@ -86,7 +88,7 @@ i2s_audio:
     i2s_mclk_pin: GPIO0
 
 #####################
-# Internal Components
+# Internal components
 
 output:
   - platform: gpio
@@ -109,8 +111,7 @@ light:
   - platform: monochromatic
     output: screen_backlight_pin
     id: screen_backlight
-    name: Screen Backlight
-    restore_mode: ALWAYS_ON
+    name: Screen backlight
 
 microphone:
   - platform: i2s_audio
@@ -127,11 +128,12 @@ display:
     dc_pin: GPIO39
     reset_pin: GPIO9
     invert_colors: false
-    rotation: 270   # Set the rotation to 270 degrees
+    rotation: 270   # Set the rotation to 90 degrees clockwise
     update_interval: never
     auto_clear_enabled: false
 
-# LVGL configuration to display "RASPIAUDIO" with alignment and rotation
+
+# Add LVGL configuration to display "RASPIAUDIO" with mirroring and rotation
 lvgl:
   displays:
     - raspiaudio_display
@@ -143,10 +145,9 @@ lvgl:
             text: 'RASPIAUDIO'
 
 ###############
-# Home Assistant Components
+# HA Components
 
 binary_sensor:
-  # Uncomment if using the function button
   # - platform: gpio
   #   pin:
   #     number: GPIO35
@@ -154,7 +155,7 @@ binary_sensor:
   #       input: true
   #       pullup: true
   #   id: function_button
-  #   name: Function Button
+  #   name: Function button
   #   disabled_by_default: true
 
   - platform: gpio
@@ -165,11 +166,10 @@ binary_sensor:
         input: true
         pullup: true
     id: volume_button
-    name: Volume Button
+    name: Volume button
     disabled_by_default: true
     on_click:
-      then:
-        - voice_assistant.start
+      then: voice_assistant.start
 
   - platform: gpio
     pin:
@@ -179,7 +179,7 @@ binary_sensor:
         input: true
         pullup: true
     id: jack_plugged
-    name: Jack Plugged In
+    name: Jack plugged in
     disabled_by_default: true
     filters:
       - delayed_on_off: 0.3s
@@ -194,8 +194,40 @@ binary_sensor:
         input: true
         pullup: true
     id: usb_plugged
-    name: USB Plugged In
+    name: USB plugged in
     disabled_by_default: true
+
+  - platform: template
+    id: button_check
+    internal: true
+    # name: Check button
+    # disabled_by_default: true
+    # icon: mdi:check
+    lambda: !lambda "return (abs(id(fp_buttons_adc).state-0.81) < 0.15);"
+
+  - platform: template
+    id: button_share
+    internal: true
+    # name: Share button
+    # disabled_by_default: true
+    # icon: mdi:hand-heart
+    lambda: !lambda "return (abs(id(fp_buttons_adc).state-1.57) < 0.15);"
+
+  - platform: template
+    id: button_love
+    internal: true
+    # name: Love button
+    # disabled_by_default: true
+    # icon: mdi:heart
+    lambda: !lambda "return (abs(id(fp_buttons_adc).state-1.98) < 0.15);"
+
+  - platform: template
+    id: button_like
+    internal: true
+    # name: Like button
+    # disabled_by_default: true
+    # icon: mdi:thumb-up
+    lambda: !lambda "return (abs(id(fp_buttons_adc).state-0.43) < 0.15);"
 
 sensor:
   - platform: rotary_encoder
@@ -232,6 +264,16 @@ sensor:
         input: true
         pullup: true
 
+  - platform: adc
+    pin: GPIO1
+    id: fp_buttons_adc
+    internal: true
+    disabled_by_default: true
+    attenuation: auto
+    update_interval: 100ms
+    filters:
+      - delta: 0.3
+
 switch:
   - platform: template
     name: Use Wake Word
@@ -239,18 +281,9 @@ switch:
     optimistic: true
     restore_mode: RESTORE_DEFAULT_ON
     on_turn_on:
-      - lambda: id(va).set_use_wake_word(true);
-      - if:
-          condition:
-            not:
-              voice_assistant.is_running
-          then:
-            - voice_assistant.start_continuous
-      - script.execute: reset_display
+      - script.execute: turn_on_wake_word
     on_turn_off:
-      - voice_assistant.stop
-      - lambda: id(va).set_use_wake_word(false);
-      - script.execute: reset_display
+      - script.execute: turn_off_wake_word
 
 media_player:
   - platform: i2s_audio
@@ -271,72 +304,33 @@ voice_assistant:
   id: va
   microphone: raspiaudio_microphone
   media_player: raspiaudio_speaker
-  use_wake_word: true
-  on_listening:
-    - light.turn_on:
-        id: screen_backlight
-        brightness: 100%
-        effect: none
-  on_tts_start:
-    - light.turn_on:
-        id: screen_backlight
-        brightness: 100%
-        effect: none
-  on_tts_end:
-    - media_player.play_media: !lambda |-
-        return x;
-    - light.turn_on:
-        id: screen_backlight
-        brightness: 100%
-        effect: none
   on_client_connected:
     - if:
         condition:
-          switch.is_on: use_wake_word
+          and:
+            - switch.is_on: use_wake_word
         then:
-          - voice_assistant.start_continuous
+          - voice_assistant.start_continuous:
   on_client_disconnected:
     - if:
         condition:
-          switch.is_on: use_wake_word
+          and:
+            - switch.is_on: use_wake_word
         then:
-          - voice_assistant.stop
+          - voice_assistant.stop:
+  on_tts_end:
+    - media_player.play_media: !lambda return x;
   on_end:
     - delay: 100ms
     - wait_until:
-        not:
-          media_player.is_playing: raspiaudio_speaker
-    - script.execute: reset_display
-  on_error:
-    - light.turn_on:
-        id: screen_backlight
-        brightness: 100%
-        effect: none
-    - delay: 1s
-    - script.execute: reset_display
-    - script.wait: reset_display
-    - lambda: |-
-        if (code == "wake-provider-missing" || code == "wake-engine-missing") {
-          id(use_wake_word).turn_off();
-        }
+        condition:
+          not: media_player.is_playing
+    - voice_assistant.stop:
 
 #########
 # Scripts
 
 script:
-  - id: reset_display
-    then:
-      - if:
-          condition:
-            switch.is_on: use_wake_word
-          then:
-            - light.turn_on:
-                id: screen_backlight
-                brightness: 100%
-                effect: none
-          else:
-            - light.turn_off: screen_backlight
-
   - id: update_dac_mute
     then:
       - if:
@@ -345,8 +339,39 @@ script:
               - media_player.is_playing
               - binary_sensor.is_off: jack_plugged
           then:
-            - logger.log: "Turning off DAC mute"
+            - logger.log: "Turn off DAC mute"
             - output.turn_off: dac_mute
           else:
-            - logger.log: "Turning on DAC mute"
+            - logger.log: "Turn on DAC mute"
             - output.turn_on: dac_mute
+
+  - id: turn_on_wake_word
+    then:
+      - if:
+          condition:
+            and:
+              - switch.is_on: use_wake_word
+          then:
+            - lambda: id(va).set_use_wake_word(true);
+            - if:
+                condition:
+                  not:
+                    media_player.is_idle:
+                then:
+                  - media_player.stop:
+            - if:
+                condition:
+                  not:
+                    - voice_assistant.is_running
+                then:
+                  - voice_assistant.start_continuous
+          else:
+            - logger.log:
+                tag: "turn_on_wake_word"
+                format: "Trying to start listening for wake word, but wake word toggle is off"
+                level: "INFO"
+
+  - id: turn_off_wake_word
+    then:
+      - voice_assistant.stop
+      - lambda: id(va).set_use_wake_word(false);
