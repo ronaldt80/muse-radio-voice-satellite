@@ -1,6 +1,7 @@
 # Raspiaudio Muse Radio Voice Satellite
 
-[![YouTube Video](https://youtube.com/shorts/rKYeiVDZrrU)](https://youtube.com/shorts/rKYeiVDZrrU)
+[![YouTube Video](https://img.youtube.com/vi/rKYeiVDZrrU/0.jpg)](https://youtube.com/shorts/rKYeiVDZrrU)
+
 
 This is an ESPHome configuration that turns the [Raspiaudio Muse Radio](https://raspiaudio.com/product/muse-radio/) into a [Home Assistant](https://www.home-assistant.io/) voice satellite.
 
