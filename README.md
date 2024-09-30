@@ -5,7 +5,7 @@
 
 This is an ESPHome configuration that turns the [Raspiaudio Muse Radio](https://raspiaudio.com/product/muse-radio/) into a [Home Assistant](https://www.home-assistant.io/) voice satellite.
 
-This project builds upon the work of [Tetele](https://github.com/tetele/muse-radio-voice-satellite). I have added several screen interfaces and fixed (hopefully) the keyword detection.
+This project builds upon the work of [Tetele](https://github.com/tetele/muse-radio-voice-satellite) thanks🙏 for you help ! . I have added several screen interfaces and fixed (hopefully) the keyword detection.
 
 ## ESPHome Radio for RASPIAUDIO Muse Radio
 
