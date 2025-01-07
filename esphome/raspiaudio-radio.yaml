@@ -1,7 +1,7 @@
 substitutions:
   name: raspiaudio-radio
   friendly_name: Raspiaudio Radio
-  raspiaudio_file: https://github.com/esphome/wake-word-voice-assistants/raw/main/casita/loading_320_240.png  
+  raspiaudio_file: https://github.com/esphome/wake-word-voice-assistants/raw/main/casita/loading_320_240.png
 
 esphome:
   name: ${name}
@@ -20,7 +20,7 @@ esphome:
       - lambda: |-
               id(lightTO) = 0;
       - script.execute: logo
-      - script.wait: logo    
+      - script.wait: logo
       - delay: 5sec
       - script.execute: reset_display
       - script.wait: reset_display
@@ -43,7 +43,9 @@ ota:
   platform: esphome
 
 api:
- services:
+  encryption:
+    key: !secret ${name}_api_key
+  services:
     - service: start_va
       then:
         - voice_assistant.start
@@ -52,20 +54,23 @@ api:
         - voice_assistant.stop
 
 wifi:
-    ap:
-     ssid: "Raspiaudio-radio"
-     password: "12345678"
-     
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: ${name}
+    password: "12345678"
+
 improv_serial:
-     
-#captive_portal:     
+
+#captive_portal:
 
 logger:
 
 ##########
 # Hardware Configuration
 es8388:
- 
 
 psram:
   mode: octal
@@ -118,8 +123,7 @@ light:
     id: screen_backlight
     name: Screen Backlight
     restore_mode: ALWAYS_ON
-    
-       
+
 globals:
   - id: lightTO
     type: int
@@ -129,10 +133,10 @@ interval:
   - interval: 1sec
     then:
       - if:
-          condition:  
+          condition:
             and:
               - light.is_on: screen_backlight
-              - lambda: 'return id(lightTO) < 60;'              
+              - lambda: 'return id(lightTO) < 60;'
           then:
 #            - logger.log: "La lumière screen_backlight est allumée."
             - lambda: |-
@@ -142,38 +146,37 @@ interval:
 #            - logger.log: "La lumière screen_backlight est éteinte."
             - lambda: |-
                 id(lightTO) = 0;
-            - light.turn_off: screen_backlight               
-           
-    
+            - light.turn_off: screen_backlight
+
 microphone:
   - platform: i2s_audio
     id: raspiaudio_microphone
     i2s_din_pin: GPIO4
     adc_type: external
     pdm: false
-    
+
 image:
-  - file: "https://github.com/RASPIAUDIO/esphomeRadio/raw/main/Raspiaudio.png"
+  - file: "https://github.com/RASPIAUDIO/esphomeRadio/raw/main/images/Raspiaudio.png"
     id: raspiIm
     resize: 320x240
     type: RGB24
-  - file:  "https://github.com/RASPIAUDIO/esphomeRadio/raw/main/WFWW.png" 
+  - file:  "https://github.com/RASPIAUDIO/esphomeRadio/raw/main/images/WFWW.png"
     id: WFWWIm
     resize: 320x240
     type: RGB24
-  - file:  "https://github.com/RASPIAUDIO/esphomeRadio/raw/main/W.png" 
+  - file:  "https://github.com/RASPIAUDIO/esphomeRadio/raw/main/images/W.png"
     id: WIm
     resize: 320x240
     type: RGB24
-  - file:  "https://github.com/RASPIAUDIO/esphomeRadio/raw/main/LISTEN.png" 
+  - file:  "https://github.com/RASPIAUDIO/esphomeRadio/raw/main/images/LISTEN.png"
     id: LIm
     resize: 320x240
     type: RGB24
-  - file:  "https://github.com/RASPIAUDIO/esphomeRadio/raw/main/ANSWER.png" 
+  - file:  "https://github.com/RASPIAUDIO/esphomeRadio/raw/main/images/ANSWER.png"
     id: AIm
     resize: 320x240
-    type: RGB24    
- 
+    type: RGB24
+
 font:
   - file:
       type: gfonts
@@ -181,14 +184,14 @@ font:
       weight: 300
       italic: true
     id: font_request
-    size: 15 
+    size: 15
   - file:
       type: gfonts
       family: Figtree
       weight: 300
     id: font_response
-    size: 15 
-            
+    size: 15
+
 display:
   - id: myDisplay
     platform: ili9xxx
@@ -197,25 +200,25 @@ display:
     dc_pin: GPIO39
     reset_pin: GPIO9
     invert_colors: true
-    rotation: 90   
+    rotation: 90
     update_interval: never
     auto_clear_enabled: false
     pages:
         - id: logoP
           lambda: |-
-            it.image(0, 0, id(raspiIm));        
+            it.image(0, 0, id(raspiIm));
         - id: waitingP
           lambda: |-
-            it.image(0, 0, id(WFWWIm));        
+            it.image(0, 0, id(WFWWIm));
         - id: waitingBP
           lambda: |-
-            it.image(0, 0, id(WIm));        
+            it.image(0, 0, id(WIm));
         - id: listeningP
           lambda: |-
-              it.image(0, 0, id(LIm));            
+              it.image(0, 0, id(LIm));
         - id: answeringP
           lambda: |-
-              it.image(0, 0, id(AIm));    
+              it.image(0, 0, id(AIm));
               it.rectangle(20 , 20 , 280 , 30 , Color::BLACK );
               it.printf(30, 25, id(font_request), Color::BLACK, "%s", id(text_request).state.c_str());
               it.rectangle(20 , 190 , 280 , 30 , Color::BLACK );
@@ -253,7 +256,7 @@ binary_sensor:
       then:
         - switch.toggle: use_wake_word
         - media_player.stop:
-        
+
   - platform: gpio
     pin:
       number: GPIO10
@@ -296,17 +299,17 @@ sensor:
         pullup: true
     on_anticlockwise:
       then:
-        - light.turn_on: screen_backlight      
+        - light.turn_on: screen_backlight
         - lambda: |-
-                id(lightTO) = 0;        
+                id(lightTO) = 0;
         - media_player.volume_down: raspiaudio_speaker
     on_clockwise:
       then:
         - media_player.volume_up: raspiaudio_speaker
         - light.turn_on: screen_backlight
         - lambda: |-
-                id(lightTO) = 0;        
-        
+                id(lightTO) = 0;
+
   - platform: rotary_encoder
     name: "Function"
     id: function_encoder
@@ -322,15 +325,45 @@ sensor:
         pullup: true
     on_anticlockwise:
       then:
-        - light.turn_on: screen_backlight      
+        - light.turn_on: screen_backlight
         - lambda: |-
-                id(lightTO) = 0;        
+                id(lightTO) = 0;
     on_clockwise:
       then:
         - light.turn_on: screen_backlight
         - lambda: |-
-                id(lightTO) = 0;    
-                
+                id(lightTO) = 0;
+
+  - platform: template
+    name: "Battery Voltage"
+    id: battery_voltage
+    unit_of_measurement: "V"
+    device_class: voltage
+    update_interval: 60s
+    lambda: |-
+      // Directly read the ADC value on GPIO13
+      return (float) analogRead(GPIO_NUM_13) / 4095.0 * 3.3;  // Adjust based on expected voltage range
+    filters:
+      - multiply: 2.0
+    on_value_range:
+      below: 3.00
+      then:
+        - switch.turn_on:
+            id: shutdown1
+  - platform: template
+    name: "Battery Percentage"
+    device_class: battery
+    unit_of_measurement: "%"
+    accuracy_decimals: 0
+    lambda: |-
+      if (id(battery_voltage).state <= 3.0) {
+        return 0.0;
+      } else if (id(battery_voltage).state >= 4.1) {
+        return 100.0;
+      } else {
+        return (id(battery_voltage).state - 3.0) / (4.1 - 3.0) * 100.0;
+      }
+
 text_sensor:
   - id: text_request
     platform: template
@@ -351,8 +384,8 @@ text_sensor:
           std::string truncated = esphome::str_truncate(name.c_str(),31);
           id(text_response).state = (truncated+"...").c_str();
         }
-               
-                    
+
+
 switch:
   - platform: template
     name: Use Wake Word
@@ -372,6 +405,11 @@ switch:
       - voice_assistant.stop
       - lambda: id(va).set_use_wake_word(false);
       - script.execute: reset_display
+
+  - platform: shutdown
+    name: "Shutdown"
+    internal: true
+    id: shutdown1
 
 media_player:
   - platform: i2s_audio
@@ -409,32 +447,32 @@ voice_assistant:
 
   on_tts_start:
     - logger.log: "🔵Voice Assistant is now streaming answer"
-    - text_sensor.template.publish: 
+    - text_sensor.template.publish:
         id: text_response
         state: !lambda return x;
     - light.turn_on:
         id: screen_backlight
         brightness: 100%
-        effect: none                     
+        effect: none
     - script.execute: answering
-    - script.wait: answering        
+    - script.wait: answering
     - delay: 5sec
     - logger.log: "🔵Waiting for media playback to finish"
     - delay: 5sec
     - wait_until:
-          media_player.is_idle: raspiaudio_speaker      
+          media_player.is_idle: raspiaudio_speaker
     - logger.log: "🔵TTS playback finished, switching to waiting page"
     - delay: 1sec
     - script.execute: reset_display
     - script.wait: reset_display
-                
+
   on_client_disconnected:
     - if:
         condition:
           switch.is_on: use_wake_word
         then:
           - voice_assistant.stop
-          
+
   on_error:
     - light.turn_on:
         id: screen_backlight
@@ -457,11 +495,11 @@ script:
     then:
     - light.turn_on: screen_backlight
     - lambda: |-
-                id(lightTO) = 0;    
+                id(lightTO) = 0;
     - script.execute: waiting
-    - script.wait: waiting 
-    
- 
+    - script.wait: waiting
+
+
 
   - id: update_dac_mute
     then:
@@ -476,18 +514,18 @@ script:
           else:
             - logger.log: "Turning on DAC mute"
             - output.turn_on: dac_mute
-            
-               
+
+
   - id: logo
     then:
        - lambda: |-
            id(myDisplay).show_page(logoP);
-           id(myDisplay).update();         
+           id(myDisplay).update();
            id(lightTO) = 0;
-       - light.turn_on: screen_backlight                        
-           
-           
-              
+       - light.turn_on: screen_backlight
+
+
+
   - id: waiting
     then:
        - if:
@@ -497,27 +535,26 @@ script:
                - voice_assistant.start_continuous
                - lambda: |-
                    id(myDisplay).show_page(waitingP);
-                   id(myDisplay).update();      
+                   id(myDisplay).update();
                    id(lightTO) = 0;
-               - light.turn_on: screen_backlight                                                            
-           else: 
+               - light.turn_on: screen_backlight
+           else:
                - lambda: |-
                    id(myDisplay).show_page(waitingBP);
-                   id(myDisplay).update();       
+                   id(myDisplay).update();
                    id(lightTO) = 0;
-               - light.turn_on: screen_backlight                                          
+               - light.turn_on: screen_backlight
   - id: listening
     then:
        - lambda: |-
-            id(myDisplay).show_page(listeningP);  
-            id(myDisplay).update();     
+            id(myDisplay).show_page(listeningP);
+            id(myDisplay).update();
             id(lightTO) = 0;
-       - light.turn_on: screen_backlight                                                                                    
+       - light.turn_on: screen_backlight
   - id: answering
     then:
        - lambda: |-
-            id(myDisplay).show_page(answeringP);          
-            id(myDisplay).update();          
+            id(myDisplay).show_page(answeringP);
+            id(myDisplay).update();
             id(lightTO) = 0;
-       - light.turn_on: screen_backlight                
-                         
+       - light.turn_on: screen_backlight
