@@ -43,8 +43,6 @@ ota:
   platform: esphome
 
 api:
-  encryption:
-    key: !secret ${name}_api_key
   services:
     - service: start_va
       then:
