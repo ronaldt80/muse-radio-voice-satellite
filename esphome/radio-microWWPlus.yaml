@@ -174,7 +174,12 @@ interval:
           else:
             - lambda: |-
                 id(lightTO) = 0;
-            - light.turn_off: screen_backlight               
+            - light.turn_off: screen_backlight  
+      - if:
+          condition:
+              lambda: 'return(id(phase) == 0);'
+          then:
+             - light.turn_on: screen_backlight                       
                  
 image:
   - file: "https://github.com/RASPIAUDIO/esphomeRadio/raw/main/images/Raspiaudio.png"
@@ -331,10 +336,7 @@ binary_sensor:
                - media_player.volume_set: 
                    volume: '0'
                - lambda: id(mute) = true;  
-          
-          
-              
-        
+                    
   - platform: gpio
     pin:
       number: GPIO45
@@ -343,9 +345,16 @@ binary_sensor:
         input: true
         pullup: true
     id: click_sta
-    name: Volume Button
+    name: Stations Button
     disabled_by_default: true
-
+    on_click:
+      then:      
+         - if:
+             condition:
+                   lambda: 'return(id(phase) == 1);'
+             then:
+                 - voice_assistant.start:    
+                       wake_word: !lambda return("alexa"); 
    
                                                 
 text_sensor:
@@ -375,7 +384,10 @@ i2s_audio:
     i2s_bclk_pin: GPIO5
     i2s_mclk_pin: GPIO0
     access_mode: duplex 
- 
+    
+
+    
+    
 microphone:
   - platform: adf_pipeline
     id: radio_mic
@@ -390,7 +402,7 @@ adf_pipeline:
     id: adf_i2s_out
     i2s_audio_id: i2s_shared
     i2s_dout_pin: GPIO17
-    sample_rate: 24000
+    sample_rate: 32000
     bits_per_sample: 16bit
     fixed_settings: false
 #    fixed_settings: true
@@ -400,6 +412,7 @@ adf_pipeline:
     id: adf_i2s_in
     pdm: false
     i2s_audio_id: i2s_shared
+#
     i2s_din_pin: GPIO4
     sample_rate: 16000 
     fixed_settings: true     
@@ -411,10 +424,6 @@ media_player:
     internal: false
     keep_pipeline_alive: true
 
-    announcement_audio:
-      sample_rate: 16000
-      bits_per_sample: 16
-      num_channels: 1
     pipeline:
       - self
       - resampler
@@ -448,14 +457,15 @@ voice_assistant:
   use_wake_word: false    
   on_listening:
     - logger.log: "listening 3 => phase"
+    - micro_wake_word.stop:
     - light.turn_on:
         id: screen_backlight
         brightness: 100%
         effect: none
     - lambda: |-
-        id(phase) = 3;
+        id(phase) = 3;  
 #    - media_player.play_media:
-#              media_url: 'http://homeassistant.local:8123/local/sounds/start.mp3'                
+#              media_url: 'https://github.com/RASPIAUDIO/esphomeRadio/raw/main/sounds/tong32000.mp3'                
     - script.execute: reset_display    
 
   on_stt_end:
@@ -508,6 +518,7 @@ script:
     then:  
        - logger.log: "===> reset_display" 
        - lambda: |-
+             id(lightTO) = 0;
              if(id(phase) == 0)id(logo).execute();
              if(id(phase) == 1)id(waiting).execute();          
              if(id(phase) == 3)id(listening).execute();
@@ -544,7 +555,7 @@ script:
                                                        
   - id: listening
     then: 
-#       - delay: 2s      
+#       - delay: 2s    
        - logger.log: "===> listening"  
        - lambda: |-
             id(myDisplay).show_page(listeningP);  
